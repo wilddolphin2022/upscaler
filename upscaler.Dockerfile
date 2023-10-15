@@ -28,6 +28,7 @@ RUN chmod +x realesrgan-ncnn-vulkan
 RUN apt-get install python3 pip -y
 RUN pip install pika
 RUN pip install minio
+RUN pip install pillow
 ENV PYTHONUNBUFFERED=1
 CMD ["python3", "main.py"]
 
