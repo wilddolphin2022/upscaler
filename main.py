@@ -94,8 +94,9 @@ def main():
                 img = Image.open(upscaled)
                 img = img.resize((size[0], size[1]), Image.Resampling.LANCZOS)
                 #new_img = img.crop((0, 0, size[0] /2, size[1] /2))
-                #new_img.save(upscaled, quality=100, optimize=True)
+                img.save(upscaled, quality=100, optimize=True)
                 #new_img.close()
+                img.close()
                 client.fput_object(
                     "outgoing", upscaled, upscaled, progress=Progress())
 
@@ -190,18 +191,11 @@ class Progress(Thread):
         self.current_size = 0
 
     def print_status(self, current_size, total_length, displayed_time, prefix):
-        formatted_str = format_string(current_size, total_length, displayed_time)
-        if formatted_str != "100%":  
-            formatted_str = prefix + formatted_str
-            self.stdout.write(_REFRESH_CHAR + formatted_str + ' ' *
-                          max(self.last_printed_len - len(formatted_str), 0))
-            self.stdout.flush()
-            self.last_printed_len = len(formatted_str)
-        else:
-            self.stdout.write(prefix)
-            self.stdout.write(" processed!\n")
-            self.stdout.flush()
-            sys.exit()
+        formatted_str = prefix + format_string(current_size, total_length, displayed_time)
+        self.stdout.write(_REFRESH_CHAR + formatted_str + ' ' *
+                        max(self.last_printed_len - len(formatted_str), 0))
+        self.stdout.flush()
+        self.last_printed_len = len(formatted_str)
 
 def seconds_to_time(seconds):
     """
@@ -234,13 +228,13 @@ def format_string(current_size, total_length, elapsed_time):
         frac = float(current_size) / total_length
     else:
         frac = 0
+        print("\n")
+        sys.exit()
 
     bar_length = int(frac * _BAR_SIZE)
     bar = (_FINISHED_BAR * bar_length +
            _REMAINING_BAR * (_BAR_SIZE - bar_length))
     percentage = _PERCENTAGE_FORMAT % (frac * 100)
-    if percentage == "100%":
-        return percentage
 
     left_str = (
         seconds_to_time(
