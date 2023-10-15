@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+
+  minio:
+    depends_on:
+      - rabbitmq
+    image: minio
+    container_name: 'minio'
+    hostname: minio 
+    expose:
+      - "9000"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-miniosecretkey}
+    command: server /data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    hostname: rabbitmq  # See https://hub.docker.com/_/rabbitmq/
+    expose:
+      - "5672"
+      - "15672"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    tmpfs:
+      - /var/lib/rabbitmq
+    volumes:
+      - /etc/rabbitmq
+    read_only: true
+
+  upscaler:
+     depends_on:
+       - rabbitmq
+     image: upscaler
+     build:  
+       context: .
+       dockerfile: upscaler.Dockerfile 
+     container_name: upscaler
+     restart: always
+     command: ["sleep","infinity"]
+     volumes:
+       - './Docker/Data/Ubuntu_Test:/exchange:rw'
+     ports:  
+       - "5555:22"
+

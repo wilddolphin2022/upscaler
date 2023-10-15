@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+set -eu
+
+here="$(cd $(dirname $0) && pwd)"
+
+function docker_compose() {
+  (cd ${here} && docker-compose --ansi never "$@")
+}
+
+function on_minio() {
+  docker_compose exec minio "$@"
+}
+
+function on_rabbitmq() {
+  docker_compose exec rabbitmq "$@"
+}
+
+function wait_for() {
+  until on_minio wait-for-it --quiet "$@" ; do
+    sleep 1
+  done
+}
+
+echo "Destroying Docker Compose environment ..."
+docker_compose rm --force --stop -v
+
+echo "Building container image ..."
+docker build \
+       --file ${here}/minio.Dockerfile \
+       --tag minio \
+       --quiet \
+       ${here}
+
+echo "Starting Docker Compose environment ..."
+docker_compose up -d
+
+echo "Waiting for RabbitMQ ..."
+wait_for rabbitmq:5672
+
+echo "Waiting for MinIO ..."
+wait_for minio:9000
+
+echo "Creating RabbitMQ incoming exchange ..."
+on_rabbitmq \
+  rabbitmqadmin --quiet declare exchange name=incoming_images type=topic durable=true
+
+echo "Creating RabbitMQ outgoing exchange ..."
+on_rabbitmq \
+  rabbitmqadmin --quiet declare exchange name=outgoing_images type=topic durable=true 
+
+echo "Creating RabbitMQ incoming queue ..."
+on_rabbitmq \
+  rabbitmqadmin --quiet declare queue name=incoming_queue auto_delete=false durable=true
+
+echo "Creating RabbitMQ outgoing queue ..."
+on_rabbitmq \
+  rabbitmqadmin --quiet declare queue name=outgoing_queue auto_delete=false durable=true
+
+echo "Binding RabbitMQ incoming queue to exchange ..."
+on_rabbitmq \
+  rabbitmqadmin --quiet declare binding source=incoming_images destination=incoming_queue routing_key='#'
+
+echo "Binding RabbitMQ outgoing queue to exchange ..."
+on_rabbitmq \
+  rabbitmqadmin --quiet declare binding source=outgoing_images destination=outgoing_queue routing_key='#'
+
+echo "Configuring MinIO AMQP notifications .."
+on_minio \
+  setup-amqp-notifications
+
+#echo "Creating MinIO images bucket ..."
+#on_minio \
+#  mc --quiet --no-color mb minio/images/
+
+echo "Creating MinIO images/incoming bucket ..."
+on_minio \
+  mc --quiet --no-color mb minio/incoming/
+
+echo "Creating MinIO images/outgoing bucket ..."
+on_minio \
+  mc --quiet --no-color mb minio/outgoing/
+
+echo "Configuring MinIO images/incoming bucket notifications ..."
+on_minio \
+  mc --quiet --no-color event add minio/incoming arn:minio:sqs::1:amqp --event put
+
+echo "Configuring MinIO images/outgoing bucket notifications ..."
+on_minio \
+  mc --quiet --no-color event add minio/outgoing arn:minio:sqs::2:amqp --event put
+
