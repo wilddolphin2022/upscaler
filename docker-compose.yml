@@ -1,11 +1,18 @@
 version: '3'
 
+networks:
+  net:
+    driver: bridge
+
 services:
 
   minio:
     depends_on:
       - rabbitmq
-    image: minio
+    image: minio:latest
+    build:
+      context: .
+      dockerfile: minio.Dockerfile 
     container_name: 'minio'
     hostname: minio 
     expose:
@@ -16,6 +23,8 @@ services:
     environment:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-miniosecretkey}
+    networks:
+     - net 
     command: server /data
 
   rabbitmq:
@@ -28,6 +37,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    networks:
+      - net 
     tmpfs:
       - /var/lib/rabbitmq
     volumes:
@@ -35,13 +46,13 @@ services:
     read_only: true
 
   upscaler:
-     depends_on:
-       - rabbitmq
      image: upscaler
+     container_name: 'upscaler'
+     networks:
+       - net 
      build:  
        context: .
        dockerfile: upscaler.Dockerfile 
-     container_name: upscaler
      restart: always
      command: ["sleep","infinity"]
      volumes:

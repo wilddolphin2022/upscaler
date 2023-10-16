@@ -19,10 +19,11 @@ RUN /etc/init.d/ssh restart
 # Add ubuntu upscaler
 COPY realesrgan-ncnn-vulkan-20220424-ubuntu.zip realesrgan-ncnn-vulkan-20220424-ubuntu.zip
 COPY main.py main.py
-RUN apt-get install gcc g++ libvulkan-dev -y
+RUN apt-get install gcc g++ libvulkan-dev nvidia-utils-535-server -y
 RUN unzip realesrgan-ncnn-vulkan-20220424-ubuntu.zip
 RUN rm realesrgan-ncnn-vulkan-20220424-ubuntu.zip
 RUN chmod +x realesrgan-ncnn-vulkan
+COPY models models
 
 # Start main script
 RUN apt-get install python3 pip -y
@@ -30,5 +31,6 @@ RUN pip install pika
 RUN pip install minio
 RUN pip install pillow
 ENV PYTHONUNBUFFERED=1
-CMD ["python3", "main.py"]
+
+ENTRYPOINT ["python3", "main.py"]
 

@@ -89,3 +89,5 @@ echo "Configuring MinIO images/outgoing bucket notifications ..."
 on_minio \
   mc --quiet --no-color event add minio/outgoing arn:minio:sqs::2:amqp --event put
 
+echo "Starting upscaler..."
+docker compose up -d upscaler
