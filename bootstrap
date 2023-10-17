@@ -25,15 +25,22 @@ function wait_for() {
 echo "Destroying Docker Compose environment ..."
 docker_compose rm --force --stop -v
 
-echo "Building container image ..."
+echo "Building container image for minio  ..."
 docker build \
        --file ${here}/minio.Dockerfile \
        --tag minio \
        --quiet \
        ${here}
 
-echo "Starting Docker Compose environment ..."
-docker_compose up -d
+echo "Building container image for upscaler  ..."
+docker build \
+       --file ${here}/upscaler.Dockerfile \
+       --tag upscaler \
+       --quiet \
+        ${here}
+
+echo "Starting Docker Compose environment for rabbitmq ..."
+docker_compose up -d rabbitmq minio 
 
 echo "Waiting for RabbitMQ ..."
 wait_for rabbitmq:5672

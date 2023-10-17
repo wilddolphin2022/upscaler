@@ -64,10 +64,10 @@ services:
      build:  
        context: .
        dockerfile: upscaler.Dockerfile 
-     #restart: always
-     #command: ["sleep","infinity"]
+     restart: always
+     command: ["sleep","infinity"]
      volumes:
-      - images : /images
+      - images:/images
      ports:  
        - "5555:22"
 
