@@ -18,7 +18,7 @@ RUN /etc/init.d/ssh restart
 
 # Add ubuntu upscaler
 COPY realesrgan-ncnn-vulkan-20220424-ubuntu.zip realesrgan-ncnn-vulkan-20220424-ubuntu.zip
-COPY main.py main.py
+COPY upscaler.py upscaler.py
 RUN apt-get install gcc g++ libvulkan-dev nvidia-utils-535-server -y
 RUN unzip realesrgan-ncnn-vulkan-20220424-ubuntu.zip
 RUN rm realesrgan-ncnn-vulkan-20220424-ubuntu.zip
@@ -32,5 +32,5 @@ RUN pip install minio
 RUN pip install pillow
 ENV PYTHONUNBUFFERED=1
 
-ENTRYPOINT ["python3", "main.py"]
+ENTRYPOINT ["python3", "upscaler.py"]
 
