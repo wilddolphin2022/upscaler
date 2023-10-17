@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import pika, sys, os, json, subprocess, time, docker
+import pika, sys, os, json, subprocess, time
 from minio import Minio
 from minio.error import S3Error
 from subprocess import Popen, PIPE, CalledProcessError
@@ -29,8 +29,13 @@ _DISPLAY_FORMAT = '|%s| %s/%s %s [elapsed: %s left: %s, %s MB/sec]'
 
 _REFRESH_CHAR = '\r'
 
+def execute(command):
+    subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT)
+
 # Here we define the main script that will be executed forever until a keyboard interrupt exception is received
 def main():
+    os.environ['IMAGE'] = 'input.jpg'
+    os.environ['CONTENTTYPE'] = 'image/jpeg'
 
     # Create a client with the MinIO server playground, its access key
     # and secret key.
@@ -41,62 +46,36 @@ def main():
         secure=False
     )
 
-    found = client.bucket_exists("incoming")
-    if found:
-        print("Bucket 'incoming' exists")
+    key = os.getenv('IMAGE')
+    contentType = os.getenv('CONTENTTYPE')
+    model = os.getenv('MODEL')
+    if model == None:
+        model = ''
 
-    found = client.bucket_exists("outgoing")
-    if found:
-        print("Bucket 'outgoing' exists")
+    if not key or not contentType:
+        print("Missing key or type parameter or both")
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)     
 
-    credentials = pika.PlainCredentials('guest', 'guest')
-    parameters = pika.ConnectionParameters(host='rabbitmq', port=5672, virtual_host='/', credentials=credentials)
-    
-    connection = pika.BlockingConnection(parameters)
-    channel = connection.channel()
+    print(" [x] Key %r" % key) 
+    print(" [x] Type %r" % contentType) 
 
-    def execute(command):
-        subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT)
-
-    # Since RabbitMQ works asynchronously, every time you receive a message, a callback function is called. We will simply print the message body to the terminal 
-    def callback(ch, method, properties, body):
-        #print(" [x] Received %r" % body)
-        message = json.loads(body.decode('utf-8'))
-        key = message['Records'][0]['s3']['object']['key']
-        contentType = message['Records'][0]['s3']['object']['contentType']
-        eventType = message['EventName']
-        #if ":Put" in eventType:
-        print(" [x] Event %r" % eventType) 
-        print(" [x] Key %r" % key) 
-        print(" [x] Type %r" % contentType) 
-        upscaled = key.split(".",1)[0] + "_upscaled.png"
-        if contentType == "image/jpeg" or contentType == "image/png" or contentType == "application/octet-stream":
-           # Ze processing loop
-                client.fget_object(
-                     "incoming", key, key)
-                 img = Image.open(key)
-                 size = img.size;
-                 img.close()
-                 model = "-n ultrasharp" 
-                 args = "./realesrgan-ncnn-vulkan -i {k} -o {u} {n}".format(k=key, u=upscaled, n=model)
-                 execute([args])
-                 img = Image.open(upscaled)
-                 img = img.resize((size[0], size[1]), Image.Resampling.LANCZOS)
-                 img.save(upscaled, quality=100, optimize=True)
-                 img.close()
-                 client.fput_object(
-                     "outgoing", upscaled, upscaled, progress=Progress())
-
-
-    # Consume a message from a queue. The auto_ack option simplifies our example, 
-    # as we do not need to send back an acknowledgement query to RabbitMQ 
-    # which we would normally want in production
-    channel.basic_consume(queue='incoming_queue', on_message_callback=callback, auto_ack=True)
-    print(' [*] Waiting for messages. To exit press CTRL+C')
-    
-
-    # Start listening for messages to consume
-    channel.start_consuming()
+    upscaled = key.split(".",1)[0] + "_upscaled.png"
+    if contentType == "image/jpeg" or contentType == "image/png" or contentType == "application/octet-stream":
+        # Ze processing loop
+        client.fget_object("incoming", key, key)
+        img = Image.open(key)
+        size = img.size;
+        img.close()
+        args = "./realesrgan-ncnn-vulkan -i {k} -o {u} {n}".format(k=key, u=upscaled, n=model)
+        execute([args])
+        img = Image.open(upscaled)
+        img = img.resize((size[0], size[1]), Image.Resampling.LANCZOS)
+        img.save(upscaled, quality=100, optimize=True)
+        img.close()
+        client.fput_object("outgoing", upscaled, upscaled, progress=Progress())
     
 class Progress(Thread):
     """
@@ -246,3 +225,4 @@ if __name__ == '__main__':
             sys.exit(0)
         except SystemExit:
             os._exit(0)
+
