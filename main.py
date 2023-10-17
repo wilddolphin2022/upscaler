@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import pika, sys, os, json, subprocess, time
+import pika, sys, os, json, subprocess, time, docker
 from minio import Minio
 from minio.error import S3Error
 from subprocess import Popen, PIPE, CalledProcessError
@@ -82,23 +82,25 @@ def main():
         print(" [x] Type %r" % contentType) 
         upscaled = key.split(".",1)[0] + "_upscaled.png"
         if contentType == "image/jpeg" or contentType == "image/png" or contentType == "application/octet-stream":
+            client = docker.from_env()
+            client.containers.run("upscaler", key, detach=True)
                 # Ze processing loop
-                client.fget_object(
-                    "incoming", key, key)
-                img = Image.open(key)
-                size = img.size;
-                img.close()
-                model = "-n ultrasharp" 
-                args = "./realesrgan-ncnn-vulkan -i {k} -o {u} {n}".format(k=key, u=upscaled, n=model)
-                execute([args])
-                img = Image.open(upscaled)
-                img = img.resize((size[0], size[1]), Image.Resampling.LANCZOS)
-                #new_img = img.crop((0, 0, size[0] /2, size[1] /2))
-                img.save(upscaled, quality=100, optimize=True)
-                #new_img.close()
-                img.close()
-                client.fput_object(
-                    "outgoing", upscaled, upscaled, progress=Progress())
+                # client.fget_object(
+                #     "incoming", key, key)
+                # img = Image.open(key)
+                # size = img.size;
+                # img.close()
+                # model = "-n ultrasharp" 
+                # args = "./realesrgan-ncnn-vulkan -i {k} -o {u} {n}".format(k=key, u=upscaled, n=model)
+                # execute([args])
+                # img = Image.open(upscaled)
+                # img = img.resize((size[0], size[1]), Image.Resampling.LANCZOS)
+                # #new_img = img.crop((0, 0, size[0] /2, size[1] /2))
+                # img.save(upscaled, quality=100, optimize=True)
+                # #new_img.close()
+                # img.close()
+                # client.fput_object(
+                #     "outgoing", upscaled, upscaled, progress=Progress())
 
 
     # Consume a message from a queue. The auto_ack option simplifies our example, 

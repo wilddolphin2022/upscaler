@@ -4,6 +4,9 @@ networks:
   net:
     driver: bridge
 
+volumes:
+  images:
+
 services:
 
   minio:
@@ -45,6 +48,14 @@ services:
       - /etc/rabbitmq
     read_only: true
 
+  manager:
+     image: ubuntu:latest
+     container_name: 'manager'
+     networks:
+       - net 
+     restart: always
+     command: ["sleep","infinity"]
+
   upscaler:
      image: upscaler
      container_name: 'upscaler'
@@ -53,10 +64,10 @@ services:
      build:  
        context: .
        dockerfile: upscaler.Dockerfile 
-     restart: always
-     command: ["sleep","infinity"]
+     #restart: always
+     #command: ["sleep","infinity"]
      volumes:
-       - './Docker/Data/Ubuntu_Test:/exchange:rw'
+      - images : /images
      ports:  
        - "5555:22"
 
