@@ -1,0 +1,6 @@
+# It is possible to specify requirements as plain names.
+pika
+minio
+pillow
+docker
+
