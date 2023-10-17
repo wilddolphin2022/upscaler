@@ -83,7 +83,8 @@ def main():
         upscaled = key.split(".",1)[0] + "_upscaled.png"
         if contentType == "image/jpeg" or contentType == "image/png" or contentType == "application/octet-stream":
             client = docker.from_env()
-            client.containers.run("upscaler", key, detach=True)
+            container = client.containers.run("upscaler", key, detach=True)
+            container.logs()
                 # Ze processing loop
                 # client.fget_object(
                 #     "incoming", key, key)
