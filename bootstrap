@@ -32,6 +32,13 @@ docker build \
        --quiet \
        ${here}
 
+echo "Building container image for manager  ..."
+docker build \
+       --file ${here}/manager.Dockerfile \
+       --tag manager \
+       --quiet \
+        ${here}
+
 echo "Building container image for upscaler  ..."
 docker build \
        --file ${here}/upscaler.Dockerfile \
@@ -75,10 +82,6 @@ on_rabbitmq \
 echo "Configuring MinIO AMQP notifications .."
 on_minio \
   setup-amqp-notifications
-
-#echo "Creating MinIO images bucket ..."
-#on_minio \
-#  mc --quiet --no-color mb minio/images/
 
 echo "Creating MinIO images/incoming bucket ..."
 on_minio \
