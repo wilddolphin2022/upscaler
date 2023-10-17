@@ -49,10 +49,13 @@ services:
     read_only: true
 
   manager:
-     image: ubuntu:latest
+     image: manager 
      container_name: 'manager'
      networks:
-       - net 
+       - net
+     build:
+       context: .
+       dockerfile: manager.Dockerfile 
      restart: always
      command: ["sleep","infinity"]
 
