@@ -34,9 +34,6 @@ def execute(command):
 
 # Here we define the main script that will be executed forever until a keyboard interrupt exception is received
 def main():
-    os.environ['IMAGE'] = 'input.jpg'
-    os.environ['CONTENTTYPE'] = 'image/jpeg'
-
     # Create a client with the MinIO server playground, its access key
     # and secret key.
     client = Minio(

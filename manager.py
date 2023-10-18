@@ -51,7 +51,12 @@ def main():
         upscaled = key.split(".",1)[0] + "_upscaled.png"
         if contentType == "image/jpeg" or contentType == "image/png" or contentType == "application/octet-stream":
             client = docker.from_env()
-            container = client.containers.run("upscaler", command="printenv", network="upscaler_net", environment=["IMAGE="+key, "CONTENTTYPE="+contentType], detach=True)
+            container = client.containers.run(
+                "upscaler", command="python3 upscaler.py", name=key, 
+                cpuset_cpus="3", mem_limit="2GB", network="upscaler_net", 
+                environment=["IMAGE="+key, "CONTENTTYPE="+contentType], 
+                detach=True)
+            print(container.logs())
 
     # Consume a message from a queue. The auto_ack option simplifies our example, 
     # as we do not need to send back an acknowledgement query to RabbitMQ 

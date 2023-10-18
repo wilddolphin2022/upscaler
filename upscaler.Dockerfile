@@ -1,3 +1,4 @@
+#FROM ubuntu:latest
 FROM nvidia/cuda:12.2.0-base-ubuntu22.04
 
 RUN apt-get update
@@ -19,7 +20,8 @@ RUN /etc/init.d/ssh restart
 # Add ubuntu upscaler
 COPY realesrgan-ncnn-vulkan-20220424-ubuntu.zip realesrgan-ncnn-vulkan-20220424-ubuntu.zip
 COPY upscaler.py upscaler.py
-RUN apt-get install gcc g++ libvulkan-dev nvidia-utils-535-server -y
+COPY handler.py handler.py 
+RUN apt-get install gcc libvulkan-dev -y
 RUN unzip realesrgan-ncnn-vulkan-20220424-ubuntu.zip
 RUN rm realesrgan-ncnn-vulkan-20220424-ubuntu.zip
 RUN chmod +x realesrgan-ncnn-vulkan
@@ -30,7 +32,8 @@ RUN apt-get install python3 pip -y
 RUN pip install pika
 RUN pip install minio
 RUN pip install pillow
+#RUN pip install runpod
 ENV PYTHONUNBUFFERED=1
 
-ENTRYPOINT ["python3", "upscaler.py"]
+#ENTRYPOINT ["python3", "upscaler.py"]
 
