@@ -53,7 +53,7 @@ def main():
             client = docker.from_env()
             container = client.containers.run(
                 "upscaler", command="python3 upscaler.py", name=key, 
-                cpuset_cpus="3", mem_limit="2GB", network="upscaler_net", 
+                mem_limit="4GB", network="upscaler_net", 
                 environment=["IMAGE="+key, "CONTENTTYPE="+contentType], 
                 detach=True)
             print(container.logs())
