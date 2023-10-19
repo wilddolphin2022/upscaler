@@ -30,7 +30,7 @@ class Manager:
         if not s3Secure:
             s3Secure = False
 
-        client = Minio(
+        self.s3Client = Minio(
             s3Host,
             access_key=s3Access,
             secret_key=s3Secret, 

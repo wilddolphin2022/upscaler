@@ -67,7 +67,7 @@ class Upscaler:
         if not s3Secure:
             s3Secure = False
 
-        client = Minio(
+        self.s3Client = Minio(
             s3Host,
             access_key=s3Access,
             secret_key=s3Secret, 
@@ -105,7 +105,7 @@ class Upscaler:
 
         if contentType == "image/jpeg" or contentType == "image/png" or contentType == "application/octet-stream":
             # Ze processing loop
-            client.fget_object("incoming", key, key)
+            self.s3Client.fget_object("incoming", key, key)
             img = Image.open(key)
             size = img.size;
             img.close()
@@ -115,7 +115,7 @@ class Upscaler:
             img = img.resize((size[0], size[1]), Image.Resampling.LANCZOS)
             img.save(upscaled, quality=100, optimize=True)
             img.close()
-            client.fput_object("outgoing", upscaled, upscaled, progress=Progress())
+            self.s3Client.fput_object("outgoing", upscaled, upscaled, progress=Progress())
     
     def exit_gracefully(self, signum, frame): 
         print('[*] Upscaler received:', signum) 
