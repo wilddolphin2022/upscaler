@@ -29,51 +29,106 @@ _DISPLAY_FORMAT = '|%s| %s/%s %s [elapsed: %s left: %s, %s MB/sec]'
 
 _REFRESH_CHAR = '\r'
 
-def execute(command):
-    subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT)
+class Upscaler:
 
-# Here we define the main script that will be executed forever until a keyboard interrupt exception is received
-def main():
-    # Create a client with the MinIO server playground, its access key
-    # and secret key.
-    client = Minio(
-        "minio:9000",
-        access_key="minio",
-        secret_key="miniosecretkey", 
-        secure=False
-    )
+    def __init__(self):
 
-    key = os.getenv('IMAGE')
-    contentType = os.getenv('CONTENTTYPE')
-    model = os.getenv('MODEL')
-    if model == None:
-        model = ''
+        self.shutdown = False
+        
+        # Minio/s3 client
+        self.s3Client = Minio(
+            "minio:9000",
+            access_key="minio",
+            secret_key="miniosecretkey", 
+            secure=False
+        )
+        
+    def execute(self, command):
+        subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT)
 
-    if not key or not contentType:
-        print("Missing key or type parameter or both")
-        try:
-            sys.exit(0)
-        except SystemExit:
-            os._exit(0)     
+    # Here we define the main script that will be executed forever until a keyboard interrupt exception is received
+    def start(self):
+        self.shutdown = False
 
-    print(" [x] Key %r" % key) 
-    print(" [x] Type %r" % contentType) 
+        # Create a client with the MinIO server playground, its access key
+        # and secret key.
+        s3Host = os.getenv('MINIO_HOST')
+        s3Access = os.getenv('MINIO_ACCESS_KEY')
+        s3Secret = os.getenv('MINIO_SECRET_KEY')
+        s3Secure = os.getenv('MINIO_SECURE')
 
-    upscaled = key.split(".",1)[0] + "_upscaled.png"
-    if contentType == "image/jpeg" or contentType == "image/png" or contentType == "application/octet-stream":
-        # Ze processing loop
-        client.fget_object("incoming", key, key)
-        img = Image.open(key)
-        size = img.size;
-        img.close()
-        args = "./realesrgan-ncnn-vulkan -i {k} -o {u} {n}".format(k=key, u=upscaled, n=model)
-        execute([args])
-        img = Image.open(upscaled)
-        img = img.resize((size[0], size[1]), Image.Resampling.LANCZOS)
-        img.save(upscaled, quality=100, optimize=True)
-        img.close()
-        client.fput_object("outgoing", upscaled, upscaled, progress=Progress())
+        if not s3Host or not s3Access or not s3Secret:
+            print(" [*] Upscaler missing s3 host or access or secret or all")
+            try:
+                sys.exit(0)
+            except SystemExit:
+                os._exit(0)     
+
+        if not s3Secure:
+            s3Secure = False
+
+        client = Minio(
+            s3Host,
+            access_key=s3Access,
+            secret_key=s3Secret, 
+            secure=s3Secure
+        )
+
+        jsonDump = os.getenv('JSON')
+        if not jsonDump:
+            print(" [*] Upscaler missing json dump")
+            try:
+                sys.exit(0)
+            except SystemExit:
+                os._exit(0)     
+            
+        message = json.loads(jsonDump)
+        key = message['Records'][0]['s3']['object']['key']
+        contentType = message['Records'][0]['s3']['object']['contentType']
+        #eventType = message['EventName']
+
+        if not key or not contentType:
+            print("Missing key or type parameter or both")
+            try:
+                sys.exit(0)
+            except SystemExit:
+                os._exit(0)     
+
+        print(" [x] Key %r" % key) 
+        print(" [x] Type %r" % contentType) 
+
+        model = os.getenv('MODEL')
+        if model == None:
+            model = ''
+
+        upscaled = key.split(".",1)[0] + "_upscaled.png"
+
+        if contentType == "image/jpeg" or contentType == "image/png" or contentType == "application/octet-stream":
+            # Ze processing loop
+            client.fget_object("incoming", key, key)
+            img = Image.open(key)
+            size = img.size;
+            img.close()
+            args = "./realesrgan-ncnn-vulkan -i {k} -o {u} {n}".format(k=key, u=upscaled, n=model)
+            self.execute([args])
+            img = Image.open(upscaled)
+            img = img.resize((size[0], size[1]), Image.Resampling.LANCZOS)
+            img.save(upscaled, quality=100, optimize=True)
+            img.close()
+            client.fput_object("outgoing", upscaled, upscaled, progress=Progress())
     
+    def exit_gracefully(self, signum, frame): 
+        print('[*] Upscaler received:', signum) 
+        del self.s3Client
+
+    def run(self):
+        print("[*] Upscaler running ...")
+        time.sleep(1)
+
+    def stop(self): 
+        print("[*] Upscaler stopping...")
+
+
 class Progress(Thread):
     """
         Constructs a :class:`Progress` object.
@@ -214,12 +269,12 @@ def format_string(current_size, total_length, elapsed_time):
 
 
 if __name__ == '__main__':
+
+    upscaler = Upscaler();
     try:
-        main()
+        upscaler.start()
     except KeyboardInterrupt:
-        print("Interrupted")
-        try:
-            sys.exit(0)
-        except SystemExit:
-            os._exit(0)
+        print("[*] Manager Interrupted")
+        upscaler.exit_gracefully(upscaler, frame=False)
+        sys.exit(0)
 

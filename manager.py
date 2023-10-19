@@ -13,17 +13,48 @@ class Manager:
     def __init__(self):
         self.shutdown = False
         
-        # Minio/s3 client
-        self.s3Client = Minio(
-            "minio:9000",
-            access_key="minio",
-            secret_key="miniosecretkey", 
-            secure=False
+        # Create a client with the MinIO server playground, its access key
+        # and secret key.
+        s3Host = os.getenv('MINIO_HOST')
+        s3Access = os.getenv('MINIO_ACCESS_KEY')
+        s3Secret = os.getenv('MINIO_SECRET_KEY')
+        s3Secure = os.getenv('MINIO_SECURE')
+
+        if not s3Host or not s3Access or not s3Secret:
+            print(" [*] Upscaler missing s3 host or access or secret or all")
+            try:
+                sys.exit(0)
+            except SystemExit:
+                os._exit(0)     
+
+        if not s3Secure:
+            s3Secure = False
+
+        client = Minio(
+            s3Host,
+            access_key=s3Access,
+            secret_key=s3Secret, 
+            secure=s3Secure
         )
 
         # RabbitMQ
-        self.mqCredentials = pika.PlainCredentials('guest', 'guest')
-        self.mqParameters = pika.ConnectionParameters(host='rabbitmq', port=5672, virtual_host='/', credentials=self.mqCredentials)
+        mqHost = os.getenv('MQ_HOST')
+        mqAccess = os.getenv('MQ_ACCESS')
+        mqSecret = os.getenv('MQ_SECRET')
+        mqPort = os.getenv('MQ_PORT')
+
+        if not mqHost or not mqAccess or not mqSecret:
+            print(" [*] Upscaler missing mq host or access or secret or all")
+            try:
+                sys.exit(0)
+            except SystemExit:
+                os._exit(0)     
+
+        if not mqPort:
+            mqPort = 5672
+
+        self.mqCredentials = pika.PlainCredentials(mqAccess, mqSecret)
+        self.mqParameters = pika.ConnectionParameters(host=mqHost, port=mqPort, virtual_host='/', credentials=self.mqCredentials)
         
         self.mqConnection = pika.BlockingConnection(self.mqParameters)
         self.mqChannel = self.mqConnection.channel()

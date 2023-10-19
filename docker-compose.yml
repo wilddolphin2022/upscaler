@@ -56,6 +56,13 @@ services:
      build:
        context: .
        dockerfile: manager.Dockerfile 
+     environment:
+       MINIO_HOST: "minio:9000"
+       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
+       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-miniosecretkey}
+       MQ_HOST: "rabbitmq"
+       MINIO_ACCESS_KEY: "guest"
+       MINIO_SECRET_KEY: "guest"
      volumes:
        - images:/images
        - "/var/run/docker.sock:/var/run/docker.sock" 
@@ -72,6 +79,10 @@ services:
        dockerfile: upscaler.Dockerfile 
      restart: always
      command: ["sleep","infinity"]
+     environment:
+       MINIO_HOST: "minio:9000"
+       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
+       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-miniosecretkey}
      volumes:
       - images:/images
      ports:  
