@@ -15,26 +15,26 @@ class Manager:
         
         # Create a client with the MinIO server playground, its access key
         # and secret key.
-        s3Host = os.getenv('MINIO_HOST')
-        s3Access = os.getenv('MINIO_ACCESS_KEY')
-        s3Secret = os.getenv('MINIO_SECRET_KEY')
-        s3Secure = os.getenv('MINIO_SECURE')
+        self.s3Host = os.getenv('MINIO_HOST')
+        self.s3Access = os.getenv('MINIO_ACCESS_KEY')
+        self.s3Secret = os.getenv('MINIO_SECRET_KEY')
+        self.s3Secure = os.getenv('MINIO_SECURE')
 
-        if not s3Host or not s3Access or not s3Secret:
+        if not self.s3Host or not self.s3Access or not self.s3Secret:
             print(" [*] Upscaler missing s3 host or access or secret or all")
             try:
                 sys.exit(0)
             except SystemExit:
                 os._exit(0)     
 
-        if not s3Secure:
-            s3Secure = False
+        if not self.s3Secure:
+            self.s3Secure = False
 
         self.s3Client = Minio(
-            s3Host,
-            access_key=s3Access,
-            secret_key=s3Secret, 
-            secure=s3Secure
+            self.s3Host,
+            access_key=self.s3Access,
+            secret_key=self.s3Secret, 
+            secure=self.s3Secure
         )
 
         # RabbitMQ
@@ -105,7 +105,9 @@ class Manager:
                 upscaler = self.dockerClient.containers.run(
                      "upscaler", command="python3 upscaler.py", name=key+datetime.now().strftime('-%Y%m-%d%H-%M%S'), 
                      mem_limit="4GB", network="upscaler_net", 
-                     environment=["JSON="+ json.dumps(message), "IMAGE="+key, "CONTENTTYPE="+contentType], 
+                     environment=["JSON="+ json.dumps(message), "IMAGE="+key, "CONTENTTYPE="+contentType, 
+                                  "MINIO_HOST=" + self.s3Host, "MINIO_ACCESS_KEY="+ self.s3Access, 
+                                  "MINIO_SECRET_KEY=" + self.s3Secret, "MINIO_SECURE=" + self.s3Secure], 
                      detach=True)
                 print(upscaler.logs())
 
