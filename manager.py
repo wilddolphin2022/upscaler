@@ -107,7 +107,7 @@ class Manager:
                      mem_limit="4GB", network="upscaler_net", 
                      environment=["JSON="+ json.dumps(message), "IMAGE="+key, "CONTENTTYPE="+contentType, 
                                   "MINIO_HOST=" + self.s3Host, "MINIO_ACCESS_KEY="+ self.s3Access, 
-                                  "MINIO_SECRET_KEY=" + self.s3Secret, "MINIO_SECURE=" + self.s3Secure], 
+                                  "MINIO_SECRET_KEY=" + self.s3Secret], 
                      detach=True)
                 print(upscaler.logs())
 
