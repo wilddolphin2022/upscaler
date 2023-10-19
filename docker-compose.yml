@@ -61,8 +61,8 @@ services:
        MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minio}
        MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-miniosecretkey}
        MQ_HOST: "rabbitmq"
-       MINIO_ACCESS_KEY: "guest"
-       MINIO_SECRET_KEY: "guest"
+       MQ_ACCESS: "guest"
+       MQ_SECRET: "guest"
      volumes:
        - images:/images
        - "/var/run/docker.sock:/var/run/docker.sock" 
