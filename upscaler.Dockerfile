@@ -20,7 +20,6 @@ RUN /etc/init.d/ssh restart
 # Add ubuntu upscaler
 COPY realesrgan-ncnn-vulkan-20220424-ubuntu.zip realesrgan-ncnn-vulkan-20220424-ubuntu.zip
 COPY upscaler.py upscaler.py
-COPY handler.py handler.py 
 RUN apt-get install gcc libvulkan-dev -y
 RUN unzip realesrgan-ncnn-vulkan-20220424-ubuntu.zip
 RUN rm realesrgan-ncnn-vulkan-20220424-ubuntu.zip
