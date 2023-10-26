@@ -1,4 +1,13 @@
-# A MinIO set-up with AMQP notifications
+# An Upscaler service that uses AI to upscale images
+
+Service runs by a Docker Compose.
+Composition consists of 
+1. a Minion S3 storage
+2. a RabbitMQ message queue that tracks S3 storage uploads to s3 /incoming bucket 
+3. a Python script that listens to S3 uploads, downloads an image uploaded (png/jpg/webp),
+processes using RealESRGAN (https://github.com/xinntao/Real-ESRGAN) upscaler, and uploads it to s3 /outgoing bucket 
+
+# MinIO set-up with AMQP notifications
 
 This project sets up a [MinIO](https://min.io/) instance with [Docker
 Compose](https://docs.docker.com/compose/), which sends AMQP
